@@ -1,4 +1,4 @@
--- GatoLIB - Modern GUI Library for Roblox
+                    -- GatoLIB - Modern GUI Library for Roblox
 -- Biblioteca GUI moderna com design limpo e funcionalidades completas
 
 local GatoLIB = {}
@@ -475,3 +475,253 @@ function GatoLIB:CreateWindow(config)
                 end
             end)
         end
+        
+        -- Função para adicionar botão
+        function tab:AddButton(config)
+            local title = config.Title or "Botão"
+            local description = config.Description or ""
+            local callback = config.Callback or function() end
+            
+            local buttonFrame = Instance.new("Frame")
+            buttonFrame.Size = UDim2.new(1, 0, 0, description ~= "" and 65 or 45)
+            buttonFrame.BackgroundColor3 = Theme.Background
+            buttonFrame.BorderSizePixel = 0
+            buttonFrame.Parent = tabContent
+            
+            CreateCorner(buttonFrame, 8)
+            CreateStroke(buttonFrame, Theme.Border)
+            
+            local button = Instance.new("TextButton")
+            button.Size = UDim2.new(1, -20, 0, 30)
+            button.Position = UDim2.new(0, 10, 0, description ~= "" and 25 or 8)
+            button.BackgroundColor3 = Theme.Accent
+            button.BorderSizePixel = 0
+            button.Text = title
+            button.TextColor3 = Theme.Text
+            button.TextScaled = true
+            button.Font = Enum.Font.GothamBold
+            button.Parent = buttonFrame
+            
+            CreateCorner(button, 6)
+            
+            if description ~= "" then
+                local descLabel = Instance.new("TextLabel")
+                descLabel.Size = UDim2.new(1, -20, 0, 15)
+                descLabel.Position = UDim2.new(0, 10, 0, 5)
+                descLabel.BackgroundTransparency = 1
+                descLabel.Text = description
+                descLabel.TextColor3 = Theme.TextSecondary
+                descLabel.TextScaled = true
+                descLabel.Font = Enum.Font.Gotham
+                descLabel.TextXAlignment = Enum.TextXAlignment.Left
+                descLabel.Parent = buttonFrame
+            end
+            
+            button.MouseButton1Click:Connect(callback)
+            
+            -- Efeito hover
+            button.MouseEnter:Connect(function()
+                CreateTween(button, {BackgroundColor3 = Color3.fromRGB(98, 111, 252)}, 0.2)
+            end)
+            
+            button.MouseLeave:Connect(function()
+                CreateTween(button, {BackgroundColor3 = Theme.Accent}, 0.2)
+            end)
+        end
+        
+        -- Função para adicionar dropdown
+        function tab:AddDropdown(name, config)
+            local dropdown = {}
+            local title = config.Title or "Dropdown"
+            local description = config.Description or ""
+            local values = config.Values or {}
+            local multi = config.Multi or false
+            local default = config.Default or (multi and {} or nil)
+            local callback = config.Callback or function() end
+            
+            local dropdownFrame = Instance.new("Frame")
+            dropdownFrame.Size = UDim2.new(1, 0, 0, description ~= "" and 80 or 60)
+            dropdownFrame.BackgroundColor3 = Theme.Background
+            dropdownFrame.BorderSizePixel = 0
+            dropdownFrame.Parent = tabContent
+            
+            CreateCorner(dropdownFrame, 8)
+            CreateStroke(dropdownFrame, Theme.Border)
+            
+            local titleLabel = Instance.new("TextLabel")
+            titleLabel.Size = UDim2.new(1, -20, 0, 20)
+            titleLabel.Position = UDim2.new(0, 10, 0, 8)
+            titleLabel.BackgroundTransparency = 1
+            titleLabel.Text = title
+            titleLabel.TextColor3 = Theme.Text
+            titleLabel.TextScaled = true
+            titleLabel.Font = Enum.Font.GothamBold
+            titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+            titleLabel.Parent = dropdownFrame
+            
+            if description ~= "" then
+                local descLabel = Instance.new("TextLabel")
+                descLabel.Size = UDim2.new(1, -20, 0, 15)
+                descLabel.Position = UDim2.new(0, 10, 0, 28)
+                descLabel.BackgroundTransparency = 1
+                descLabel.Text = description
+                descLabel.TextColor3 = Theme.TextSecondary
+                descLabel.TextScaled = true
+                descLabel.Font = Enum.Font.Gotham
+                descLabel.TextXAlignment = Enum.TextXAlignment.Left
+                descLabel.Parent = dropdownFrame
+            end
+            
+            local dropdownButton = Instance.new("TextButton")
+            dropdownButton.Size = UDim2.new(1, -20, 0, 25)
+            dropdownButton.Position = UDim2.new(0, 10, 1, -33)
+            dropdownButton.BackgroundColor3 = Theme.Secondary
+            dropdownButton.BorderSizePixel = 0
+            dropdownButton.Text = multi and "Selecione..." or (default and values[default] or "Selecione...")
+            dropdownButton.TextColor3 = Theme.Text
+            dropdownButton.TextScaled = true
+            dropdownButton.Font = Enum.Font.Gotham
+            dropdownButton.TextXAlignment = Enum.TextXAlignment.Left
+            dropdownButton.Parent = dropdownFrame
+            
+            CreateCorner(dropdownButton, 6)
+            CreateStroke(dropdownButton, Theme.Border)
+            
+            local dropdownPadding = Instance.new("UIPadding")
+            dropdownPadding.PaddingLeft = UDim.new(0, 10)
+            dropdownPadding.PaddingRight = UDim.new(0, 10)
+            dropdownPadding.Parent = dropdownButton
+            
+            local arrow = Instance.new("TextLabel")
+            arrow.Size = UDim2.new(0, 20, 1, 0)
+            arrow.Position = UDim2.new(1, -25, 0, 0)
+            arrow.BackgroundTransparency = 1
+            arrow.Text = "▼"
+            arrow.TextColor3 = Theme.TextSecondary
+            arrow.TextScaled = true
+            arrow.Font = Enum.Font.Gotham
+            arrow.Parent = dropdownButton
+            
+            -- Lista de opções
+            local optionsList = Instance.new("Frame")
+            optionsList.Size = UDim2.new(1, -20, 0, math.min(#values * 30, 150))
+            optionsList.Position = UDim2.new(0, 10, 1, -8)
+            optionsList.BackgroundColor3 = Theme.Secondary
+            optionsList.BorderSizePixel = 0
+            optionsList.Parent = dropdownFrame
+            optionsList.Visible = false
+            optionsList.ZIndex = 10
+            
+            CreateCorner(optionsList, 6)
+            CreateStroke(optionsList, Theme.Border)
+            
+            local optionsScroll = Instance.new("ScrollingFrame")
+            optionsScroll.Size = UDim2.new(1, 0, 1, 0)
+            optionsScroll.Position = UDim2.new(0, 0, 0, 0)
+            optionsScroll.BackgroundTransparency = 1
+            optionsScroll.BorderSizePixel = 0
+            optionsScroll.ScrollBarThickness = 4
+            optionsScroll.ScrollBarImageColor3 = Theme.Accent
+            optionsScroll.CanvasSize = UDim2.new(0, 0, 0, #values * 30)
+            optionsScroll.Parent = optionsList
+            
+            local optionsLayout = Instance.new("UIListLayout")
+            optionsLayout.FillDirection = Enum.FillDirection.Vertical
+            optionsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+            optionsLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+            optionsLayout.Parent = optionsScroll
+            
+            local selectedValues = {}
+            if multi and type(default) == "table" then
+                for _, v in pairs(default) do
+                    selectedValuesselectedValues[v] = true
+                end
+            elseif not multi and default then
+                dropdownButton.Text = tostring(default)
+                selectedValues = default
+            end
+
+            -- Função para atualizar o texto do botão
+            local function updateButtonText()
+                if multi then
+                    local selections = {}
+                    for val, isSelected in pairs(selectedValues) do
+                        if isSelected then
+                            table.insert(selections, val)
+                        end
+                    end
+                    dropdownButton.Text = #selections > 0 and table.concat(selections, ", ") or "Selecione..."
+                else
+                    dropdownButton.Text = selectedValues or "Selecione..."
+                end
+            end
+
+            -- Criar os botões das opções
+            for _, option in ipairs(values) do
+                local optionButton = Instance.new("TextButton")
+                optionButton.Size = UDim2.new(1, 0, 0, 30)
+                optionButton.BackgroundColor3 = Theme.Background
+                optionButton.BorderSizePixel = 0
+                optionButton.Text = tostring(option)
+                optionButton.TextColor3 = Theme.TextSecondary
+                optionButton.TextScaled = true
+                optionButton.Font = Enum.Font.Gotham
+                optionButton.Parent = optionsScroll
+
+                CreateCorner(optionButton, 4)
+
+                optionButton.MouseButton1Click:Connect(function()
+                    if multi then
+                        selectedValues[option] = not selectedValues[option]
+                    else
+                        selectedValues = option
+                        optionsList.Visible = false
+                    end
+
+                    updateButtonText()
+                    callback(selectedValues)
+                end)
+
+                -- Hover effect
+                optionButton.MouseEnter:Connect(function()
+                    CreateTween(optionButton, {BackgroundColor3 = Theme.Accent}, 0.2)
+                end)
+                optionButton.MouseLeave:Connect(function()
+                    CreateTween(optionButton, {BackgroundColor3 = Theme.Background}, 0.2)
+                end)
+            end
+
+            -- Toggle visibilidade do dropdown
+            dropdownButton.MouseButton1Click:Connect(function()
+                optionsList.Visible = not optionsList.Visible
+            end)
+
+            -- Fechar dropdown ao clicar fora
+            UserInputService.InputBegan:Connect(function(input, gameProcessed)
+                if not gameProcessed and optionsList.Visible then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local guiPos = optionsList.AbsolutePosition
+                    local guiSize = optionsList.AbsoluteSize
+
+                    if not (mousePos.X > guiPos.X and mousePos.X < guiPos.X + guiSize.X and
+                            mousePos.Y > guiPos.Y and mousePos.Y < guiPos.Y + guiSize.Y) then
+                        optionsList.Visible = false
+                    end
+                end
+            end)
+
+            dropdown.Values = selectedValues
+            dropdown.Update = updateButtonText
+            updateButtonText()
+
+            return dropdown
+        end
+
+        table.insert(window.Tabs, tab)
+        return tab
+    end
+
+    return window
+end
+
+return GatoLIB
