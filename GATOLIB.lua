@@ -1,4 +1,4 @@
-                    -- GatoLIB - Modern GUI Library for Roblox
+-- GatoLIB - Modern GUI Library for Roblox
 -- Biblioteca GUI moderna com design limpo e funcionalidades completas
 
 local GatoLIB = {}
@@ -148,20 +148,14 @@ function GatoLIB:Notify(config)
     -- Função para remover notificação
     local function removeNotification()
         CreateTween(notifyFrame, {Position = UDim2.new(1, 350, 0, 0)}, 0.3)
-        wait(0.3)
-        notifyFrame:Destroy()
+        game:GetService("Debris"):AddItem(notifyFrame, 0.5)
     end
     
     closeButton.MouseButton1Click:Connect(removeNotification)
     
     -- Auto-remover após duração
     if duracao > 0 then
-        spawn(function()
-            wait(duracao)
-            if notifyFrame.Parent then
-                removeNotification()
-            end
-        end)
+        game:GetService("Debris"):AddItem(notifyFrame, duracao)
     end
 end
 
@@ -296,7 +290,6 @@ function GatoLIB:CreateWindow(config)
         tabContent.BorderSizePixel = 0
         tabContent.ScrollBarThickness = 4
         tabContent.ScrollBarImageColor3 = Theme.Accent
-        tabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
         tabContent.Parent = contentContainer
         tabContent.Visible = false
         
@@ -306,11 +299,6 @@ function GatoLIB:CreateWindow(config)
         contentLayout.VerticalAlignment = Enum.VerticalAlignment.Top
         contentLayout.Padding = UDim.new(0, 10)
         contentLayout.Parent = tabContent
-        
-        -- Auto-resize canvas
-        contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-            tabContent.CanvasSize = UDim2.new(0, 0, 0, contentLayout.AbsoluteContentSize.Y + 20)
-        end)
         
         -- Ativar aba
         tabButton.MouseButton1Click:Connect(function()
@@ -537,7 +525,6 @@ function GatoLIB:CreateWindow(config)
             local values = config.Values or {}
             local multi = config.Multi or false
             local default = config.Default or (multi and {} or nil)
-            local callback = config.Callback or function() end
             
             local dropdownFrame = Instance.new("Frame")
             dropdownFrame.Size = UDim2.new(1, 0, 0, description ~= "" and 80 or 60)
@@ -622,7 +609,6 @@ function GatoLIB:CreateWindow(config)
             optionsScroll.BorderSizePixel = 0
             optionsScroll.ScrollBarThickness = 4
             optionsScroll.ScrollBarImageColor3 = Theme.Accent
-            optionsScroll.CanvasSize = UDim2.new(0, 0, 0, #values * 30)
             optionsScroll.Parent = optionsList
             
             local optionsLayout = Instance.new("UIListLayout")
@@ -634,94 +620,409 @@ function GatoLIB:CreateWindow(config)
             local selectedValues = {}
             if multi and type(default) == "table" then
                 for _, v in pairs(default) do
-                    selectedValuesselectedValues[v] = true
-                end
-            elseif not multi and default then
-                dropdownButton.Text = tostring(default)
-                selectedValues = default
-            end
-
-            -- Função para atualizar o texto do botão
-            local function updateButtonText()
-                if multi then
-                    local selections = {}
-                    for val, isSelected in pairs(selectedValues) do
-                        if isSelected then
-                            table.insert(selections, val)
-                        end
-                    end
-                    dropdownButton.Text = #selections > 0 and table.concat(selections, ", ") or "Selecione..."
-                else
-                    dropdownButton.Text = selectedValues or "Selecione..."
+                    selectedValues[v] = true
                 end
             end
-
-            -- Criar os botões das opções
-            for _, option in ipairs(values) do
+            
+            for i, value in pairs(values) do
                 local optionButton = Instance.new("TextButton")
                 optionButton.Size = UDim2.new(1, 0, 0, 30)
-                optionButton.BackgroundColor3 = Theme.Background
+                optionButton.BackgroundColor3 = Theme.Secondary
                 optionButton.BorderSizePixel = 0
-                optionButton.Text = tostring(option)
-                optionButton.TextColor3 = Theme.TextSecondary
+                optionButton.Text = value
+                optionButton.TextColor3 = Theme.Text
                 optionButton.TextScaled = true
                 optionButton.Font = Enum.Font.Gotham
+                optionButton.TextXAlignment = Enum.TextXAlignment.Left
                 optionButton.Parent = optionsScroll
-
-                CreateCorner(optionButton, 4)
-
-                optionButton.MouseButton1Click:Connect(function()
-                    if multi then
-                        selectedValues[option] = not selectedValues[option]
-                    else
-                        selectedValues = option
-                        optionsList.Visible = false
-                    end
-
-                    updateButtonText()
-                    callback(selectedValues)
-                end)
-
-                -- Hover effect
-                optionButton.MouseEnter:Connect(function()
-                    CreateTween(optionButton, {BackgroundColor3 = Theme.Accent}, 0.2)
-                end)
-                optionButton.MouseLeave:Connect(function()
-                    CreateTween(optionButton, {BackgroundColor3 = Theme.Background}, 0.2)
-                end)
-            end
-
-            -- Toggle visibilidade do dropdown
-            dropdownButton.MouseButton1Click:Connect(function()
-                optionsList.Visible = not optionsList.Visible
-            end)
-
-            -- Fechar dropdown ao clicar fora
-            UserInputService.InputBegan:Connect(function(input, gameProcessed)
-                if not gameProcessed and optionsList.Visible then
-                    local mousePos = UserInputService:GetMouseLocation()
-                    local guiPos = optionsList.AbsolutePosition
-                    local guiSize = optionsList.AbsoluteSize
-
-                    if not (mousePos.X > guiPos.X and mousePos.X < guiPos.X + guiSize.X and
-                            mousePos.Y > guiPos.Y and mousePos.Y < guiPos.Y + guiSize.Y) then
-                        optionsList.Visible = false
+                
+                local optionPadding = Instance.new("UIPadding")
+                optionPadding.PaddingLeft = UDim.new(0, 10)
+                optionPadding.Parent = optionButton
+                
+                if multi then
+                    local checkbox = Instance.new("Frame")
+                    checkbox.Size = UDim2.new(0, 16, 0, 16)
+                    checkbox.Position = UDim2.new(1, -26, 0.5, -8)
+                    checkbox.BackgroundColor3 = selectedValues[value] and Theme.Accent or Theme.Background
+                    checkbox.BorderSizePixel = 0
+                    checkbox.Parent = optionButton
+                    
+                    CreateCorner(checkbox, 3)
+                    CreateStroke(checkbox, Theme.Border)
+                    
+                    if selectedValues[value] then
+                        local checkmark = Instance.new("TextLabel")
+                        checkmark.Size = UDim2.new(1, 0, 1, 0)
+                        checkmark.BackgroundTransparency = 1
+                        checkmark.Text = "✓"
+                        checkmark.TextColor3 = Theme.Text
+                        checkmark.TextScaled = true
+                        checkmark.Font = Enum.Font.GothamBold
+                        checkmark.Parent = checkbox
                     end
                 end
+                
+                optionButton.MouseButton1Click:Connect(function()
+                    if multi then
+                        selectedValues[value] = not selectedValues[value]
+                        checkbox.BackgroundColor3 = selectedValues[value] and Theme.Accent or Theme.Background
+                        
+                        if selectedValues[value] then
+                            local checkmark = Instance.new("TextLabel")
+                            checkmark.Size = UDim2.new(1, 0, 1, 0)
+                            checkmark.BackgroundTransparency = 1
+                            checkmark.Text = "✓"
+                            checkmark.TextColor3 = Theme.Text
+                            checkmark.TextScaled = true
+                            checkmark.Font = Enum.Font.GothamBold
+                            checkmark.Parent = checkbox
+                        else
+                            for _, child in pairs(checkbox:GetChildren()) do
+                                if child:IsA("TextLabel") then
+                                    child:Destroy()
+                                end
+                            end
+                        end
+                        
+                        local selectedCount = 0
+                        for _ in pairs(selectedValues) do
+                            if selectedValues[_] then
+                                selectedCount = selectedCount + 1
+                            end
+                        end
+                        
+                        dropdownButton.Text = selectedCount > 0 and selectedCount .. " selecionado(s)" or "Selecione..."
+                    else
+                        dropdownButton.Text = value
+                        optionsList.Visible = false
+                        CreateTween(arrow, {Rotation = 0}, 0.2)
+                        
+                        if config.Callback then
+                            config.Callback(value)
+                        end
+                    end
+                end)
+                
+                optionButton.MouseEnter:Connect(function()
+                    CreateTween(optionButton, {BackgroundColor3 = Theme.Background}, 0.2)
+                end)
+                
+                optionButton.MouseLeave:Connect(function()
+                    CreateTween(optionButton, {BackgroundColor3 = Theme.Secondary}, 0.2)
+                end)
+            end
+            
+            dropdownButton.MouseButton1Click:Connect(function()
+                optionsList.Visible = not optionsList.Visible
+                CreateTween(arrow, {Rotation = optionsList.Visible and 180 or 0}, 0.2)
+                
+                if optionsList.Visible then
+                    dropdownFrame.Size = UDim2.new(1, 0, 0, (description ~= "" and 80 or 60) + math.min(#values * 30, 150) + 8)
+                else
+                    dropdownFrame.Size = UDim2.new(1, 0, 0, description ~= "" and 80 or 60)
+                end
             end)
-
-            dropdown.Values = selectedValues
-            dropdown.Update = updateButtonText
-            updateButtonText()
-
+            
+            -- Função SetValue para multi dropdown
+            function dropdown:SetValue(newValues)
+                if multi then
+                    selectedValues = newValues or {}
+                    
+                    for _, optionButton in pairs(optionsScroll:GetChildren()) do
+                        if optionButton:IsA("TextButton") then
+                            local value = optionButton.Text
+                            local checkbox = optionButton:FindFirstChild("Frame")
+                            if checkbox then
+                                checkbox.BackgroundColor3 = selectedValues[value] and Theme.Accent or Theme.Background
+                                
+                                -- Remove checkmarks
+                                for _, child in pairs(checkbox:GetChildren()) do
+                                    if child:IsA("TextLabel") then
+                                        child:Destroy()
+                                    end
+                                end
+                                
+                                -- Add checkmark if selected
+                                if selectedValues[value] then
+                                    local checkmark = Instance.new("TextLabel")
+                                    checkmark.Size = UDim2.new(1, 0, 1, 0)
+                                    checkmark.BackgroundTransparency = 1
+                                    checkmark.Text = "✓"
+                                    checkmark.TextColor3 = Theme.Text
+                                    checkmark.TextScaled = true
+                                    checkmark.Font = Enum.Font.GothamBold
+                                    checkmark.Parent = checkbox
+                                end
+                            end
+                        end
+                    end
+                    
+                    local selectedCount = 0
+                    for _ in pairs(selectedValues) do
+                        if selectedValues[_] then
+                            selectedCount = selectedCount + 1
+                        end
+                    end
+                    
+                    dropdownButton.Text = selectedCount > 0 and selectedCount .. " selecionado(s)" or "Selecione..."
+                end
+            end
+            
             return dropdown
         end
-
-        table.insert(window.Tabs, tab)
+        
+        window.Tabs[tabName] = tab
+        
+        -- Ativar primeira aba por padrão
+        if #window.Tabs == 1 then
+            tabButton.BackgroundColor3 = Theme.Accent
+            tabButton.TextColor3 = Theme.Text
+            tabContent.Visible = true
+        end
+        
         return tab
     end
-
+    
+    -- Função Dialog
+    function window:Dialog(config)
+        local title = config.Title or "Dialog"
+        local content = config.Content or "Conteúdo do dialog"
+        local buttons = config.Buttons or {{Title = "OK", Callback = function() end}}
+        
+        -- Overlay
+        local overlay = Instance.new("Frame")
+        overlay.Size = UDim2.new(1, 0, 1, 0)
+        overlay.Position = UDim2.new(0, 0, 0, 0)
+        overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        overlay.BackgroundTransparency = 0.5
+        overlay.BorderSizePixel = 0
+        overlay.Parent = screenGui
+        overlay.ZIndex = 100
+        
+        -- Dialog frame
+        local dialogFrame = Instance.new("Frame")
+        dialogFrame.Size = UDim2.new(0, 400, 0, 200)
+        dialogFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+        dialogFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+        dialogFrame.BackgroundColor3 = Theme.Background
+        dialogFrame.BorderSizePixel = 0
+        dialogFrame.Parent = overlay
+        dialogFrame.ZIndex = 101
+        
+        CreateCorner(dialogFrame, 12)
+        CreateStroke(dialogFrame, Theme.Border)
+        
+        -- Título do dialog
+        local dialogTitle = Instance.new("TextLabel")
+        dialogTitle.Size = UDim2.new(1, -20, 0, 30)
+        dialogTitle.Position = UDim2.new(0, 10, 0, 10)
+        dialogTitle.BackgroundTransparency = 1
+        dialogTitle.Text = title
+        dialogTitle.TextColor3 = Theme.Text
+        dialogTitle.TextScaled = true
+        dialogTitle.Font = Enum.Font.GothamBold
+        dialogTitle.TextXAlignment = Enum.TextXAlignment.Left
+        dialogTitle.Parent = dialogFrame
+        dialogTitle.ZIndex = 102
+        
+        -- Conteúdo do dialog
+        local dialogContent = Instance.new("TextLabel")
+        dialogContent.Size = UDim2.new(1, -20, 0, 80)
+        dialogContent.Position = UDim2.new(0, 10, 0, 50)
+        dialogContent.BackgroundTransparency = 1
+        dialogContent.Text = content
+        dialogContent.TextColor3 = Theme.TextSecondary
+        dialogContent.TextScaled = true
+        dialogContent.Font = Enum.Font.Gotham
+        dialogContent.TextXAlignment = Enum.TextXAlignment.Left
+        dialogContent.TextWrapped = true
+        dialogContent.Parent = dialogFrame
+        dialogContent.ZIndex = 102
+        
+        -- Container de botões
+        local buttonContainer = Instance.new("Frame")
+        buttonContainer.Size = UDim2.new(1, -20, 0, 40)
+        buttonContainer.Position = UDim2.new(0, 10, 1, -50)
+        buttonContainer.BackgroundTransparency = 1
+        buttonContainer.Parent = dialogFrame
+        buttonContainer.ZIndex = 102
+        
+        local buttonLayout = Instance.new("UIListLayout")
+        buttonLayout.FillDirection = Enum.FillDirection.Horizontal
+        buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+        buttonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+        buttonLayout.Padding = UDim.new(0, 10)
+        buttonLayout.Parent = buttonContainer
+        
+        for _, buttonConfig in pairs(buttons) do
+            local dialogButton = Instance.new("TextButton")
+            dialogButton.Size = UDim2.new(0, 80, 0, 30)
+            dialogButton.BackgroundColor3 = buttonConfig.Title == "Confirm" and Theme.Accent or Theme.Secondary
+            dialogButton.BorderSizePixel = 0
+            dialogButton.Text = buttonConfig.Title
+            dialogButton.TextColor3 = Theme.Text
+            dialogButton.TextScaled = true
+            dialogButton.Font = Enum.Font.GothamBold
+            dialogButton.Parent = buttonContainer
+            dialogButton.ZIndex = 102
+            
+            CreateCorner(dialogButton, 6)
+            
+            dialogButton.MouseButton1Click:Connect(function()
+                if buttonConfig.Callback then
+                    buttonConfig.Callback()
+                end
+                overlay:Destroy()
+            end)
+            
+            -- Efeito hover
+            dialogButton.MouseEnter:Connect(function()
+                local newColor = buttonConfig.Title == "Confirm" and Color3.fromRGB(98, 111, 252) or Theme.Background
+                CreateTween(dialogButton, {BackgroundColor3 = newColor}, 0.2)
+            end)
+            
+            dialogButton.MouseLeave:Connect(function()
+                local originalColor = buttonConfig.Title == "Confirm" and Theme.Accent or Theme.Secondary
+                CreateTween(dialogButton, {BackgroundColor3 = originalColor}, 0.2)
+            end)
+        end
+        
+        -- Animação de entrada
+        dialogFrame.Size = UDim2.new(0, 0, 0, 0)
+        CreateTween(dialogFrame, {Size = UDim2.new(0, 400, 0, 200)}, 0.3, Enum.EasingStyle.Back)
+    end
+    
+    -- Animação de entrada da janela
+    mainFrame.Size = UDim2.new(0, 0, 0, 0)
+    CreateTween(mainFrame, {Size = windowSize}, 0.5, Enum.EasingStyle.Back)
+    
+    -- Sistema de arrastar janela
+    local dragging = false
+    local dragStart = nil
+    local startPos = nil
+    
+    titleBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = mainFrame.Position
+        end
+    end)
+    
+    titleBar.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+    
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            mainFrame.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
     return window
 end
 
-return GatoLIB
+-- Exemplo de uso
+--[[
+local Window = GatoLIB:CreateWindow({
+    Title = "GatoLIB Exemplo",
+    Size = UDim2.new(0, 700, 0, 500)
+})
+
+local Tabs = {
+    Main = Window:CreateTab({Title = "Principal", Icon = "🏠"}),
+    Settings = Window:CreateTab({Title = "Configurações", Icon = "⚙️"})
+}
+
+-- Notificação de exemplo
+GatoLIB:Notify({
+    Titulo = "Bem-vindo!",
+    Conteudo = "GatoLIB carregado com sucesso",
+    SubConteudo = "Aproveite todas as funcionalidades",
+    Duração = 5
+})
+
+-- Parágrafo
+Tabs.Main:AddParagraph({
+    Title = "Sobre a GatoLIB",
+    Content = "Uma biblioteca moderna e elegante para criar interfaces gráficas no Roblox com design limpo e funcionalidades avançadas."
+})
+
+-- Slider
+Tabs.Main:AddSlider("WalkSpeed", {
+    Title = "Velocidade de Caminhada",
+    Description = "Ajuste a velocidade do seu personagem",
+    Default = 16,
+    Min = 0,
+    Max = 100,
+    Rounding = 0,
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+    end
+})
+
+-- Botão
+Tabs.Main:AddButton({
+    Title = "Teleportar para Spawn",
+    Description = "Clique para voltar ao ponto inicial",
+    Callback = function()
+        Window:Dialog({
+            Title = "Confirmação",
+            Content = "Deseja realmente teleportar para o spawn?",
+            Buttons = {
+                {
+                    Title = "Confirm",
+                    Callback = function()
+                        GatoLIB:Notify({
+                            Titulo = "Teleportado!",
+                            Conteudo = "Você foi teleportado com sucesso"
+                        })
+                    end
+                },
+                {
+                    Title = "Cancel",
+                    Callback = function()
+                        print("Teleporte cancelado")
+                    end
+                }
+            }
+        })
+    end
+})
+
+-- Dropdown simples
+Tabs.Settings:AddDropdown("Theme", {
+    Title = "Tema",
+    Description = "Escolha o tema da interface",
+    Values = {"Escuro", "Claro", "Azul", "Verde", "Roxo"},
+    Multi = false,
+    Default = 1,
+    Callback = function(Value)
+        print("Tema selecionado:", Value)
+    end
+})
+
+-- Multi Dropdown
+local MultiDropdown = Tabs.Settings:AddDropdown("Features", {
+    Title = "Recursos",
+    Description = "Selecione os recursos que deseja ativar",
+    Values = {"Auto Farm", "ESP", "Speed Hack", "Jump Boost", "Infinite Health"},
+    Multi = true,
+    Default = {"Auto Farm", "ESP"}
+})
+
+-- Exemplo de SetValue
+MultiDropdown:SetValue({
+    ["Auto Farm"] = true,
+    ["ESP"] = false,
+    ["Speed Hack"] = true
+})
