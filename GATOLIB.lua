@@ -930,4 +930,3 @@ function GatoLIB:CreateWindow(config)
     return window
 end
 return GatoLIB
-end
