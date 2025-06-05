@@ -57,8 +57,7 @@ function GatoLIB:Notify(config)
     local titulo = config.Titulo or "Notificação"
     local conteudo = config.Conteudo or "Conteúdo da notificação"
     local subConteudo = config.SubConteudo
-    local duracao = config.Duração or 5
-    
+    local duracao = config.Duracao or 5
     -- Container principal das notificações
     local notifyContainer = PlayerGui:FindFirstChild("GatoLIB_Notifications")
     if not notifyContainer then
@@ -930,99 +929,3 @@ function GatoLIB:CreateWindow(config)
     
     return window
 end
-
--- Exemplo de uso
---[[
-local Window = GatoLIB:CreateWindow({
-    Title = "GatoLIB Exemplo",
-    Size = UDim2.new(0, 700, 0, 500)
-})
-
-local Tabs = {
-    Main = Window:CreateTab({Title = "Principal", Icon = "🏠"}),
-    Settings = Window:CreateTab({Title = "Configurações", Icon = "⚙️"})
-}
-
--- Notificação de exemplo
-GatoLIB:Notify({
-    Titulo = "Bem-vindo!",
-    Conteudo = "GatoLIB carregado com sucesso",
-    SubConteudo = "Aproveite todas as funcionalidades",
-    Duração = 5
-})
-
--- Parágrafo
-Tabs.Main:AddParagraph({
-    Title = "Sobre a GatoLIB",
-    Content = "Uma biblioteca moderna e elegante para criar interfaces gráficas no Roblox com design limpo e funcionalidades avançadas."
-})
-
--- Slider
-Tabs.Main:AddSlider("WalkSpeed", {
-    Title = "Velocidade de Caminhada",
-    Description = "Ajuste a velocidade do seu personagem",
-    Default = 16,
-    Min = 0,
-    Max = 100,
-    Rounding = 0,
-    Callback = function(Value)
-        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
-    end
-})
-
--- Botão
-Tabs.Main:AddButton({
-    Title = "Teleportar para Spawn",
-    Description = "Clique para voltar ao ponto inicial",
-    Callback = function()
-        Window:Dialog({
-            Title = "Confirmação",
-            Content = "Deseja realmente teleportar para o spawn?",
-            Buttons = {
-                {
-                    Title = "Confirm",
-                    Callback = function()
-                        GatoLIB:Notify({
-                            Titulo = "Teleportado!",
-                            Conteudo = "Você foi teleportado com sucesso"
-                        })
-                    end
-                },
-                {
-                    Title = "Cancel",
-                    Callback = function()
-                        print("Teleporte cancelado")
-                    end
-                }
-            }
-        })
-    end
-})
-
--- Dropdown simples
-Tabs.Settings:AddDropdown("Theme", {
-    Title = "Tema",
-    Description = "Escolha o tema da interface",
-    Values = {"Escuro", "Claro", "Azul", "Verde", "Roxo"},
-    Multi = false,
-    Default = 1,
-    Callback = function(Value)
-        print("Tema selecionado:", Value)
-    end
-})
-
--- Multi Dropdown
-local MultiDropdown = Tabs.Settings:AddDropdown("Features", {
-    Title = "Recursos",
-    Description = "Selecione os recursos que deseja ativar",
-    Values = {"Auto Farm", "ESP", "Speed Hack", "Jump Boost", "Infinite Health"},
-    Multi = true,
-    Default = {"Auto Farm", "ESP"}
-})
-
--- Exemplo de SetValue
-MultiDropdown:SetValue({
-    ["Auto Farm"] = true,
-    ["ESP"] = false,
-    ["Speed Hack"] = true
-})
